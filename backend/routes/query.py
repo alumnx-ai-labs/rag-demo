@@ -1,5 +1,3 @@
-import os
-import anthropic
 from fastapi import APIRouter
 from pydantic import BaseModel
 from services.embeddings import get_embedding
@@ -12,6 +10,8 @@ class QueryRequest(BaseModel):
 
 @router.post("/query")
 async def query_documents(req: QueryRequest):
+    from services.embeddings import _get_client  # reuse the same OpenAI client
+
     embedding = get_embedding(req.question)
     results = search_chunks(embedding)
 
@@ -23,24 +23,32 @@ async def query_documents(req: QueryRequest):
 
     context = "\n\n---\n\n".join(r["text"] for r in results)
 
-    client = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
-    message = client.messages.create(
-        model="claude-opus-4-8",
+    response = _get_client().chat.completions.create(
+        model="gpt-4o",
         max_tokens=1024,
         messages=[
             {
+                "role": "system",
+                "content": (
+                    "You are a helpful assistant that answers questions about uploaded documents. "
+                    "Use the provided context to answer as fully and helpfully as possible. "
+                    "If the context contains relevant information, use it to give a detailed answer. "
+                    "Only say you don't know if the context is completely unrelated to the question."
+                ),
+            },
+            {
                 "role": "user",
                 "content": (
-                    f"Answer the question using only the context below. "
-                    f"If the answer is not in the context, say \"I don't know based on the provided documents.\"\n\n"
-                    f"Context:\n{context}\n\n"
-                    f"Question: {req.question}"
+                    f"Here is the relevant content retrieved from the document:\n\n"
+                    f"{context}\n\n"
+                    f"Question: {req.question}\n\n"
+                    f"Please answer based on the document content above."
                 ),
-            }
+            },
         ],
     )
 
     return {
-        "answer": message.content[0].text,
+        "answer": response.choices[0].message.content,
         "sources": results,
     }

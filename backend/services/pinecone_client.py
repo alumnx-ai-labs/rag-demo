@@ -20,7 +20,7 @@ def upsert_chunks(chunks: list[dict], filename: str):
     for i in range(0, len(vectors), 100):
         index.upsert(vectors=vectors[i : i + 100])
 
-def search_chunks(embedding: list[float], top_k: int = 5) -> list[dict]:
+def search_chunks(embedding: list[float], top_k: int = 10) -> list[dict]:
     results = _index().query(vector=embedding, top_k=top_k, include_metadata=True)
     return [
         {
