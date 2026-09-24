@@ -21,7 +21,7 @@ export default function ChatWindow() {
     setLoading(true)
 
     try {
-      const res  = await fetch('/api/query', {
+      const res  = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/query`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ question: q }),
