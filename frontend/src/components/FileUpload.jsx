@@ -14,7 +14,7 @@ export default function FileUpload({ onUpload }) {
     const form = new FormData()
     form.append('file', file)
     try {
-      const res  = await fetch('/api/upload', { method: 'POST', body: form })
+      const res  = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/upload`, { method: 'POST', body: form })
       const text = await res.text()
       let data
       try { data = JSON.parse(text) } catch { data = { detail: text } }
